@@ -11,6 +11,8 @@ Download the "MapDrawJZ.xlsm" and put your own map data to draw this map. You  c
 
 # Example
 
+![map1](https://github.com/pinbo/MapDrawJZ/blob/master/map.png)
+
 # Credits
 Thanks to the Renhu Liu and Jinling Meng for make the origial Excel Macro.[
 Liu RH and Meng JL (2003) [MapDraw: a Microsoft Excel macro for drawing genetic linkage maps based on given genetic linkage data.] Heraditas (Beijing), 25 (3): 317-321
