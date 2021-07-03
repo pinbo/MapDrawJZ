@@ -1,0 +1,222 @@
+Option Explicit
+
+Sub MapDrawJZ()
+' Modified by Junli Zhang on 2017-02-25 (zhjl86@gmail.com)
+' Now take absolute position input
+' Renhu Liu 1999-11-211-21  liurenhu@21cn.com
+'/******************* variation definition **********************/
+    Dim Row As Integer, Col As Integer, TempName1 As String, TempName2 As String
+    Dim LineD As Double, SumDist As Double, FontS As Integer
+    Dim i As Integer, j As Integer, CurMar As String, CurRange As Range, a As Integer, rowStart As Integer, rowEnd As Integer
+    Dim Dist As Double, TextP1 As Double, TextP2 As Double
+    Dim cM As Double, StartPx As Integer, StartPy As Integer, Wide As Double, Head As Double, LineW As Double, dec As Integer, Interval As Integer
+'/******************* Parameters below, you can change the numbers ********************/
+    cM = 10: StartPx = 250: StartPy = 20: Wide = 8: Head = 7: LineW = 1.5: dec = 1: Interval = 1
+' cM: Chromosome length (Points) per centiMogen;  Dec: Decimal digits;  Font: Font size;  Wide: Wide of your Chromosome;
+' Head: Head length of your chromosome;  LineW: Points of your chromosome line;
+' Interval: whether to use the interval (1) or absolute position
+' Sometime, you have to change the value of "cM" larger, 5 for example, if your average linkage distance less than 8 cM.
+' Please change the value of Dec to 2 when your linkage data have two decimals.
+' cM (P), 1P=0.3517mm;
+
+    a = 2
+    FontS = 10
+'/********************************************/
+    ActiveCell.CurrentRegion.Select    'Input region select
+    Set CurRange = Selection
+    Row = CurRange.Rows.Count
+    Col = CurRange.Columns.Count
+    
+    If Row < 2 Or Col < 2 Then
+       MsgBox "Data invalid or not selected!"
+       GoTo End3
+    End If
+    TempName1 = "ATTENTION: This macro is used to linkage map drawing! Some of the following parameters may be important for you." & Chr(10) & "cM: Chromosome length (Points) per centiMogen;  Dec: Decimal digits;  Font: Font size;  Wide: Wide of your Chromosome;  Head: Head length of your chromosome;  LineW: Points of your chromosome line; Interval: whether to use interval or absolute distance" & Chr(10) & Chr(10) & "Please contact with zhjl86@gmail.com for technique support" & Chr(10) & Chr(10)
+
+Again1:
+    CurMar = InputBox(TempName1 & "Please Input Parameters: cM, Dec, Font, Wide, Head, LineW, Interval", "Parameters Input Box", cM & "," & dec & "," & FontS & "," & Wide & "," & Head & "," & LineW & "," & Interval)
+    'Parameter Input
+    If CurMar = "" Then GoTo End3
+    cM = Val(CurMar)
+    CurMar = Mid(CurMar, InStr(CurMar, ",") + 1)
+    dec = Val(CurMar)
+    CurMar = Mid(CurMar, InStr(CurMar, ",") + 1)
+    FontS = Val(CurMar)
+    CurMar = Mid(CurMar, InStr(CurMar, ",") + 1)
+    Wide = Val(CurMar)
+    CurMar = Mid(CurMar, InStr(CurMar, ",") + 1)
+    Head = Val(CurMar)
+    CurMar = Mid(CurMar, InStr(CurMar, ",") + 1)
+    LineW = Val(CurMar)
+    CurMar = Mid(CurMar, InStr(CurMar, ",") + 1)
+    Interval = Val(CurMar)
+    LineD = (FontS + a) / cM
+    If cM * FontS * Wide * (Head + 1) * (dec + 1) * LineW <= 0 Then
+       MsgBox "Parameter errow! Please input them again!"
+       GoTo Again1
+    End If
+    j = 1
+    rowStart = 1
+    rowEnd = 1
+    TempName1 = ActiveSheet.Name
+    Worksheets.Add
+    TempName2 = ActiveSheet.Name
+    
+    Do While j <= Row
+    'Dist = WorksheetFunction.Sum(CurRange.Columns(j)) 'toal length of a chromosome. change here
+    'If CurRange.Cells(1, j).Value <> 0 Then
+    '   MsgBox ("Your data have no 0 in the first row! Please add it on and try again!")
+    '   CurRange.Cells(1, j).Select
+    '   GoTo End1
+    'End If
+    If j = Row Or CurRange.Cells(j, 1).Value <> CurRange.Cells(j + 1, 1).Value Then
+        rowEnd = j
+        Dist = CurRange.Cells(j, 3).Value
+    'Dist = WorksheetFunction.Max(CurRange.Columns(j))
+    ' Add chromosome name
+    With ActiveSheet.Shapes.AddTextbox(msoTextOrientationHorizontal, StartPx - 36 + Wide / 2, StartPy - FontS * 4, 72, FontS + a).TextFrame
+        .Characters.Text = CurRange.Cells(j, 1).Text
+        .Characters.Font.Name = "Arial"
+        .Characters.Font.Size = FontS * 1.5
+        .HorizontalAlignment = xlCenter
+        .AutoSize = True
+        .Parent.Line.Visible = msoFalse
+        .Parent.Fill.Transparency = 1
+        .MarginTop = 0
+    End With
+    'Add chromosome bar
+    ActiveSheet.Shapes.AddShape(msoShapeRoundedRectangle, StartPx, StartPy, Wide, Head * 2 + Dist * cM).Select
+    Selection.ShapeRange.Adjustments.Item(1) = 0.5
+    Selection.ShapeRange.Line.Weight = LineW
+    ActiveSheet.Shapes.AddLine(StartPx - Wide / 4 - LineW / 2, StartPy + Head, StartPx - 0.4 * Wide, StartPy + Head).Select
+   
+    TextP1 = -99 ' distance plotting position
+    TextP2 = -99 ' marker plotting position
+    Dist = 0 ' distance from last marker
+    CurMar = CurRange.Cells(rowStart, 2).Text ' Present Marker to be added
+    ' Add first row (marker)
+    ActiveSheet.Shapes.AddLine(StartPx - 0.4 * Wide, StartPy + Head, StartPx + 3.4 * Wide, StartPy + Head).Select
+           With ActiveSheet.Shapes.AddTextbox(msoTextOrientationHorizontal, StartPx + 3.4 * Wide, StartPy + Head - FontS / 2 - a / 2, 72, FontS + a).TextFrame
+                .Characters.Text = CurMar
+                .Characters.Font.Name = "Arial"
+                .Characters.Font.Size = FontS
+                .HorizontalAlignment = xlLeft
+                .AutoSize = True
+                .Parent.Line.Visible = msoFalse
+                .Parent.Fill.Transparency = 1
+                .MarginTop = 0
+           End With
+     TextP2 = Dist
+     SumDist = CurRange.Cells(rowStart, 3).Value ' absolute position of the current marker
+     ' if plot absolute positions
+     If Interval = 0 Then
+        ActiveSheet.Shapes.AddLine(StartPx - 0.4 * Wide, StartPy + Head, StartPx - 2.4 * Wide, StartPy + Head).Select
+           With ActiveSheet.Shapes.AddTextbox(msoTextOrientationHorizontal, StartPx - 2.4 * Wide - (Len("A" & Dist)) * FontS, StartPy + TextP2 * cM + Head - FontS / 2 - a / 2, (Len("A" & Dist)) * FontS, FontS + a).TextFrame
+             .Characters.Text = WorksheetFunction.Fixed(SumDist, dec)
+             .Characters.Font.Name = "Arial"
+             .Characters.Font.Size = FontS
+             .HorizontalAlignment = xlRight
+             .AutoSize = True
+             .Parent.Line.Visible = msoFalse
+             .Parent.Fill.Transparency = 1
+             .MarginTop = 0
+           End With
+     End If
+
+     ' Add the rest of rows, need to consider position accumulation (dodging)
+     For i = rowStart + 1 To rowEnd
+        CurMar = CurRange.Cells(i, 2).Text ' current marker name
+        'If Not IsNumeric(CurRange.Cells(i, j)) Then CurRange.Cells(i, j) = 0
+        If IsEmpty(CurRange.Cells(i, 3)) Then Exit For
+        'Dist = WorksheetFunction.Fixed(CurRange.Cells(i, j), dec) ' distance from last marker. USE this line if input distance is interval
+        Dist = WorksheetFunction.Fixed(CurRange.Cells(i, 3) - CurRange.Cells(i - 1, 3), dec) ' distance from last marker. USE this line if input is absolute position
+        SumDist = SumDist + Dist ' absolute or accumulated distance of the current marker
+
+        If SumDist - TextP2 >= LineD And CurMar <> Empty Then
+           TextP2 = SumDist
+        Else
+           If SumDist - TextP2 < LineD And CurMar <> Empty Then
+              TextP2 = TextP2 + LineD
+           End If
+        End If
+              ActiveSheet.Shapes.AddLine(StartPx - 0.4 * Wide, StartPy + SumDist * cM + Head, StartPx + 2 * Wide, StartPy + SumDist * cM + Head).Select
+              ActiveSheet.Shapes.AddLine(StartPx + 2 * Wide, StartPy + SumDist * cM + Head, StartPx + 3 * Wide, StartPy + TextP2 * cM + Head).Select
+              ActiveSheet.Shapes.AddLine(StartPx + 3 * Wide, StartPy + TextP2 * cM + Head, StartPx + 3.4 * Wide, StartPy + TextP2 * cM + Head).Select
+              With ActiveSheet.Shapes.AddTextbox(msoTextOrientationHorizontal, StartPx + 3.4 * Wide, StartPy + TextP2 * cM + Head - FontS / 2 - a / 2, 72, FontS + a).TextFrame
+                .Characters.Text = CurMar
+                .Characters.Font.Name = "Arial"
+                .Characters.Font.Size = FontS
+                .HorizontalAlignment = xlLeft
+                .AutoSize = True
+                .Parent.Line.Visible = msoFalse
+                .Parent.Fill.Transparency = 1
+                .MarginTop = 0
+              End With
+        
+        ' draw interval distance on the left side of a chromosome
+        If Interval = 0 Then
+           ActiveSheet.Shapes.AddLine(StartPx - 0.4 * Wide, StartPy + SumDist * cM + Head, StartPx - 1 * Wide, StartPy + SumDist * cM + Head).Select
+           ActiveSheet.Shapes.AddLine(StartPx - 1 * Wide, StartPy + SumDist * cM + Head, StartPx - 2 * Wide, StartPy + TextP2 * cM + Head).Select
+           ActiveSheet.Shapes.AddLine(StartPx - 2 * Wide, StartPy + TextP2 * cM + Head, StartPx - 2.4 * Wide, StartPy + TextP2 * cM + Head).Select
+           With ActiveSheet.Shapes.AddTextbox(msoTextOrientationHorizontal, StartPx - 2.4 * Wide - (Len("A" & Dist)) * FontS, StartPy + TextP2 * cM + Head - FontS / 2 - a / 2, (Len("A" & Dist)) * FontS, FontS + a).TextFrame
+             .Characters.Text = WorksheetFunction.Fixed(SumDist, dec)
+             .Characters.Font.Name = "Arial"
+             .Characters.Font.Size = FontS
+             .HorizontalAlignment = xlRight
+             .AutoSize = True
+             .Parent.Line.Visible = msoFalse
+             .Parent.Fill.Transparency = 1
+             .MarginTop = 0
+           End With
+        Else
+        If Dist <> 0 And Dist <> Empty Then
+           If SumDist - Dist / 2 - TextP1 >= LineD Then
+              TextP1 = SumDist - Dist / 2
+           Else
+              TextP1 = TextP1 + LineD
+           End If
+              ActiveSheet.Shapes.AddLine(StartPx - Wide / 4 - LineW / 2, StartPy + (SumDist - Dist / 2) * cM + Head, StartPx - Wide, StartPy + (SumDist - Dist / 2) * cM + Head).Select
+              ActiveSheet.Shapes.AddLine(StartPx - Wide, StartPy + (SumDist - Dist / 2) * cM + Head, StartPx - 2 * Wide, StartPy + TextP1 * cM + Head).Select
+              ActiveSheet.Shapes.AddLine(StartPx - 2 * Wide, StartPy + TextP1 * cM + Head, StartPx - 2.4 * Wide, StartPy + TextP1 * cM + Head).Select
+              With ActiveSheet.Shapes.AddTextbox(msoTextOrientationHorizontal, StartPx - 2.4 * Wide - (Len("A" & Dist)) * FontS, StartPy + TextP1 * cM + Head - FontS / 2 - a / 2, (Len("A" & Dist)) * FontS, FontS + a).TextFrame
+                .Characters.Text = WorksheetFunction.Fixed(Dist, dec)
+                .Characters.Font.Name = "Arial"
+                .Characters.Font.Size = FontS
+                .HorizontalAlignment = xlRight
+                .AutoSize = True
+                .Parent.Line.Visible = msoFalse
+                .Parent.Fill.Transparency = 1
+                .MarginTop = 0
+              End With
+        End If
+        End If
+    Next i
+    ' after drawing for current chromosome, reset the rowStart
+    rowStart = j + 1
+    'ActiveSheet.Shapes.SelectAll
+    'Selection.ShapeRange.Group.Cut
+    'Worksheets(TempName1).Paste
+    StartPx = StartPx + 150
+    End If
+End2:
+    ' ActiveSheet.Shapes.SelectAll
+    ' Selection.ShapeRange.Group.Cut
+    ' Worksheets(TempName1).Paste
+    ' j = j + 1
+    ' StartPx = StartPx + 150
+    j = j + 1
+    Loop
+End1:
+    ActiveSheet.Shapes.SelectAll
+    Selection.ShapeRange.Group
+    'Selection.ShapeRange.Group.Cut
+    'Worksheets(TempName1).Paste
+    'Application.DisplayAlerts = False
+    'Worksheets(TempName2).Delete
+    'Application.DisplayAlerts = True
+End3:
+    
+End Sub
+'/************************************************/
+
+
